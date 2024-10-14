@@ -1,0 +1,73 @@
+version: '3.8'
+
+networks:
+  hadoop_network:
+    driver: bridge  
+
+services:
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    restart: always
+    ports:
+      - 9870:9870
+      - 9000:9000
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=test
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - HDFS_CONF_dfs_webhdfs_enabled=true
+      - HDFS_CONF_dfs_permissions_enabled=false
+      - HDFS_CONF_dfs_replication=2  
+    healthcheck:
+      test: ["CMD", "/opt/hadoop-3.2.1/bin/hdfs", "dfsadmin", "-safemode", "get"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - hadoop_network 
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode
+    restart: always
+    volumes:
+      - hadoop_datanode:/hadoop/dfs/data
+      - ./data:/data  
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+      CORE_CONF_fs_defaultFS: hdfs://namenode:9000
+    ports:
+      - "9864:9864"
+    networks:
+      - hadoop_network 
+
+  resourcemanager:
+    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
+    container_name: resourcemanager
+    restart: always
+    ports:
+      - "8088:8088"
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode:9864"
+    networks:
+      - hadoop_network  
+
+volumes:
+  hadoop_namenode:
+  hadoop_datanode:
+
+
+## commands to load data to hadoop
+
+# after running this docker file a data folder has been created..
+# copy the dataset file to "data" folder
+# this data folder is created in datanode which is running in the docker container
+# using localhost:9870 access hadoop(hdfs) and create a folder (eg..dataset_folder)
+# use the following commands to copy the file from datanode to hdfs
+# these commands can be executed in the Terminal
+# commands : "docker exec -it datanode bash"
+# copy the dataset from datanode to hadoop(hdfs) by using the following command
+# command : "hdfs dfs -put /data/dataset.csv /dataset_folder/"
+# using "put" command we can copy our data to hadoop  :)
