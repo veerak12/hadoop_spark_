@@ -57,7 +57,10 @@ services:
 volumes:
   hadoop_namenode:
   hadoop_datanode:
-
+  
+####### Commands Info ##################
+## run the docker container using the following command
+## "docker compose up -d"
 
 ## commands to load data to hadoop
 
